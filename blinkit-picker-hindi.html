@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blinkit पिकर ट्रेनिंग सिमुलेशन</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blinkit-yellow: #F8E831;
+  --blinkit-dark: #0C0C0C;
+  --blinkit-green: #2DB540;
+  --blinkit-red: #E53935;
+  --blinkit-orange: #FF9800;
+  --blinkit-blue: #1E88E5;
+  --bg-dark: #111113;
+  --bg-card: #1A1A1E;
+  --bg-shelf: #252529;
+  --text-primary: #F5F5F0;
+  --text-secondary: #9E9E9E;
+  --text-dim: #666;
+  --correct-glow: rgba(45,181,64,0.3);
+  --wrong-glow: rgba(229,57,53,0.3);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  background:var(--bg-dark);
+  color:var(--text-primary);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+.topbar{
+  background:#0C0C0C;
+  border-bottom:2px solid var(--blinkit-yellow);
+  padding:12px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.logo{
+  background:var(--blinkit-yellow);color:var(--blinkit-dark);
+  font-weight:900;font-size:18px;padding:6px 14px;border-radius:6px;letter-spacing:-0.5px;
+}
+.topbar-title{font-size:14px;color:var(--text-secondary);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.stat-pill{
+  background:var(--bg-card);border:1px solid #333;border-radius:20px;
+  padding:6px 14px;font-size:13px;display:flex;align-items:center;gap:6px;
+}
+.stat-pill .icon{font-size:16px;}
+.stat-pill .val{font-weight:700;color:var(--blinkit-yellow);}
+
+.app{max-width:900px;margin:0 auto;padding:20px 16px 100px;}
+
+.welcome{text-align:center;padding:60px 20px;animation:fadeUp .6s ease-out;}
+.welcome-badge{
+  display:inline-block;background:var(--blinkit-yellow);color:var(--blinkit-dark);
+  font-weight:800;font-size:12px;padding:5px 16px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;
+}
+.welcome h1{font-size:32px;font-weight:900;line-height:1.3;margin-bottom:12px;}
+.welcome h1 span{color:var(--blinkit-yellow);}
+.welcome p{color:var(--text-secondary);font-size:15px;max-width:500px;margin:0 auto 32px;line-height:1.7;}
+.start-btn{
+  background:var(--blinkit-yellow);color:var(--blinkit-dark);border:none;
+  padding:16px 48px;font-size:18px;font-weight:800;border-radius:50px;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+  box-shadow:0 0 30px rgba(248,232,49,0.2);
+}
+.start-btn:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(248,232,49,0.35);}
+
+.scenario-card{
+  background:var(--bg-card);border:1px solid #2a2a2e;
+  border-radius:var(--radius);overflow:hidden;animation:fadeUp .5s ease-out;margin-bottom:20px;
+}
+.scenario-header{
+  background:linear-gradient(135deg,#1e1e22,#262630);
+  padding:20px 24px;border-bottom:1px solid #333;
+}
+.scenario-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  padding:4px 12px;border-radius:20px;margin-bottom:12px;
+}
+.tag-packing{background:rgba(248,232,49,0.15);color:var(--blinkit-yellow);}
+.tag-picking{background:rgba(30,136,229,0.15);color:var(--blinkit-blue);}
+.tag-quality{background:rgba(45,181,64,0.15);color:var(--blinkit-green);}
+.tag-customer{background:rgba(255,152,0,0.15);color:var(--blinkit-orange);}
+.tag-safety{background:rgba(229,57,53,0.15);color:var(--blinkit-red);}
+
+.scenario-header h2{font-size:20px;font-weight:800;line-height:1.4;margin-bottom:8px;}
+.scenario-context{color:var(--text-secondary);font-size:14px;line-height:1.6;}
+
+.scene{padding:24px;min-height:200px;position:relative;overflow:hidden;}
+.dark-store-scene{
+  background:linear-gradient(180deg,#14141a 0%,#1a1a22 100%);
+  border:1px solid #222;border-radius:var(--radius-sm);
+  margin:0 24px 0;padding:20px;position:relative;
+}
+.shelf-row{display:flex;gap:8px;margin-bottom:10px;align-items:flex-end;}
+.shelf-item{
+  background:var(--bg-shelf);border:1px solid #333;border-radius:6px;
+  padding:8px;text-align:center;font-size:24px;min-width:50px;
+  position:relative;transition:all .3s;
+}
+.shelf-item.highlight{
+  border-color:var(--blinkit-yellow);
+  box-shadow:0 0 12px rgba(248,232,49,0.2);animation:pulse 1.5s infinite;
+}
+.shelf-item .item-label{font-size:10px;color:var(--text-secondary);margin-top:4px;}
+.shelf-item .aisle-code{
+  position:absolute;top:-8px;right:-4px;
+  background:var(--blinkit-yellow);color:var(--blinkit-dark);
+  font-size:8px;font-weight:800;padding:2px 5px;border-radius:4px;
+}
+.bag-visual{display:flex;justify-content:center;gap:16px;padding:16px 24px;}
+.bag{
+  width:100px;height:120px;border-radius:0 0 12px 12px;border:2px dashed #444;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:28px;position:relative;transition:all .3s;
+}
+.bag.heavy{background:rgba(229,57,53,0.1);border-color:var(--blinkit-red);}
+.bag.medium{background:rgba(255,152,0,0.1);border-color:var(--blinkit-orange);}
+.bag.light{background:rgba(45,181,64,0.1);border-color:var(--blinkit-green);}
+.bag-label{font-size:10px;color:var(--text-secondary);margin-top:6px;font-weight:600;}
+
+.order-strip{
+  display:flex;align-items:center;gap:12px;background:#1c1c22;
+  border-radius:var(--radius-sm);padding:12px 16px;margin:0 24px 16px;
+  border-left:3px solid var(--blinkit-yellow);
+}
+.order-strip .order-id{font-weight:800;font-size:13px;color:var(--blinkit-yellow);}
+.order-strip .order-items{font-size:12px;color:var(--text-secondary);flex:1;}
+.order-strip .order-timer{
+  font-weight:800;font-size:16px;color:var(--blinkit-red);font-variant-numeric:tabular-nums;
+}
+
+.options{padding:8px 24px 24px;}
+.option-btn{
+  width:100%;background:#1e1e24;border:1.5px solid #333;border-radius:var(--radius-sm);
+  padding:16px 20px;margin-bottom:10px;cursor:pointer;
+  display:flex;align-items:flex-start;gap:14px;transition:all .25s;text-align:left;
+  font-family:inherit;color:var(--text-primary);font-size:inherit;
+}
+.option-btn:hover{border-color:#555;background:#24242c;transform:translateX(4px);}
+.option-btn.selected-correct{
+  border-color:var(--blinkit-green)!important;background:rgba(45,181,64,0.08)!important;
+  box-shadow:0 0 20px var(--correct-glow);
+}
+.option-btn.selected-wrong{
+  border-color:var(--blinkit-red)!important;background:rgba(229,57,53,0.08)!important;
+  box-shadow:0 0 20px var(--wrong-glow);animation:shakeX .4s ease;
+}
+.option-btn.disabled{pointer-events:none;opacity:0.5;}
+.option-btn.show-correct{
+  border-color:var(--blinkit-green)!important;background:rgba(45,181,64,0.05)!important;
+}
+.opt-icon{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;background:#2a2a30;
+}
+.opt-content{flex:1;}
+.opt-title{font-weight:700;font-size:15px;margin-bottom:3px;}
+.opt-desc{font-size:12px;color:var(--text-secondary);line-height:1.5;}
+
+.feedback{
+  margin:0 24px 20px;padding:16px 20px;border-radius:var(--radius-sm);
+  font-size:14px;line-height:1.7;animation:fadeUp .3s ease-out;display:none;
+}
+.feedback.correct{background:rgba(45,181,64,0.08);border:1px solid rgba(45,181,64,0.3);}
+.feedback.wrong{background:rgba(229,57,53,0.08);border:1px solid rgba(229,57,53,0.3);}
+.feedback-title{font-weight:800;font-size:15px;margin-bottom:6px;}
+.feedback-tip{
+  background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;
+  margin-top:10px;font-size:13px;border-left:3px solid var(--blinkit-yellow);
+}
+
+.next-btn{
+  display:none;margin:0 24px 24px;background:var(--blinkit-yellow);color:var(--blinkit-dark);
+  border:none;padding:14px 32px;font-size:16px;font-weight:800;border-radius:50px;
+  cursor:pointer;font-family:inherit;width:calc(100% - 48px);transition:all .2s;
+}
+.next-btn:hover{transform:scale(1.02);box-shadow:0 0 30px rgba(248,232,49,0.3);}
+
+.progress-bar{height:4px;background:#222;margin:0 24px 16px;border-radius:4px;overflow:hidden;}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--blinkit-yellow),var(--blinkit-green));
+  border-radius:4px;transition:width .6s ease;
+}
+
+.results{text-align:center;padding:50px 20px;animation:fadeUp .6s ease-out;}
+.results-circle{
+  width:140px;height:140px;border-radius:50%;margin:0 auto 24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:42px;font-weight:900;
+}
+.results-circle.great{background:rgba(45,181,64,0.12);border:3px solid var(--blinkit-green);color:var(--blinkit-green);}
+.results-circle.okay{background:rgba(255,152,0,0.12);border:3px solid var(--blinkit-orange);color:var(--blinkit-orange);}
+.results-circle.poor{background:rgba(229,57,53,0.12);border:3px solid var(--blinkit-red);color:var(--blinkit-red);}
+.results-circle small{font-size:14px;font-weight:600;opacity:0.7;}
+.results h2{font-size:24px;font-weight:900;margin-bottom:8px;}
+.results p{color:var(--text-secondary);font-size:14px;line-height:1.7;max-width:400px;margin:0 auto 16px;}
+.results-breakdown{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:24px 0;}
+.rb-item{
+  background:var(--bg-card);border:1px solid #2a2a2e;border-radius:var(--radius-sm);
+  padding:14px 20px;min-width:120px;
+}
+.rb-item .rb-num{font-size:28px;font-weight:900;}
+.rb-item .rb-label{font-size:11px;color:var(--text-secondary);margin-top:4px;}
+.retry-btn{
+  background:transparent;border:2px solid var(--blinkit-yellow);color:var(--blinkit-yellow);
+  padding:14px 40px;font-size:16px;font-weight:800;border-radius:50px;
+  cursor:pointer;font-family:inherit;transition:all .2s;margin-top:12px;
+}
+.retry-btn:hover{background:var(--blinkit-yellow);color:var(--blinkit-dark);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(248,232,49,0.15);}50%{box-shadow:0 0 20px rgba(248,232,49,0.35);}}
+@keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+
+.hidden{display:none!important;}
+
+@media(max-width:600px){
+  .welcome h1{font-size:24px;}
+  .topbar{padding:10px 12px;}
+  .stat-pill{font-size:11px;padding:4px 10px;}
+  .scenario-header h2{font-size:17px;}
+  .bag-visual{flex-wrap:wrap;}
+  .shelf-row{flex-wrap:wrap;justify-content:center;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">blinkit</div>
+    <div class="topbar-title">पिकर ट्रेनिंग सिमुलेशन</div>
+  </div>
+  <div class="topbar-right">
+    <div class="stat-pill"><span class="icon">⚡</span> स्कोर: <span class="val" id="scoreDisplay">0</span></div>
+    <div class="stat-pill"><span class="icon">📦</span> <span class="val" id="levelDisplay">0/0</span></div>
+  </div>
+</div>
+
+<div class="app">
+  <div id="welcomeScreen" class="welcome">
+    <div class="welcome-badge">🏪 डार्क स्टोर ट्रेनिंग</div>
+    <h1>बनिए <span>सबसे तेज़</span> और<br><span>सबसे स्मार्ट</span> पिकर</h1>
+    <p>इस सिमुलेशन में आप डार्क स्टोर की असली परिस्थितियों का सामना करेंगे। सही फ़ैसले लें, गलतियों से सीखें, और बनें एक एक्सपर्ट पिकर!</p>
+    <button class="start-btn" onclick="startSimulation()">🚀 ट्रेनिंग शुरू करें</button>
+  </div>
+  <div id="scenarioContainer" class="hidden"></div>
+  <div id="resultsScreen" class="hidden"></div>
+</div>
+
+<script>
+const scenarios = [
+  {
+    id:1, category:"packing", tagClass:"tag-packing", tagLabel:"📦 पैकिंग",
+    title:"ऑर्डर पैकिंग: भारी और नाज़ुक सामान",
+    context:"एक ऑर्डर में 2 लीटर का तेल, अंडे का कार्टन, ब्रेड, और आलू (2 kg) है। आपको बैग में पैक करना है।",
+    orderId:"#BLK-7824", orderItems:"तेल 2L, अंडे, ब्रेड, आलू 2kg", timer:"8:42",
+    scene:"packing",
+    sceneData:{items:[{emoji:"🫒",label:"तेल 2L"},{emoji:"🥚",label:"अंडे"},{emoji:"🍞",label:"ब्रेड"},{emoji:"🥔",label:"आलू 2kg"}]},
+    options:[
+      {icon:"1️⃣",title:"सबसे नीचे तेल और आलू, ऊपर अंडे और ब्रेड",desc:"भारी सामान नीचे, नाज़ुक सामान ऊपर",correct:true},
+      {icon:"2️⃣",title:"जैसे मिले वैसे रख दो — जल्दी पैक करो",desc:"टाइम बचेगा, डिलीवरी फास्ट होगी",correct:false},
+      {icon:"3️⃣",title:"अंडे सबसे नीचे रखो क्योंकि कार्टन मज़बूत है",desc:"कार्टन सपोर्ट देगा बाकी सामान को",correct:false},
+      {icon:"4️⃣",title:"हर चीज़ अलग बैग में रखो",desc:"सबसे सुरक्षित — कुछ नहीं टूटेगा",correct:false}
+    ],
+    correctFeedback:{title:"✅ बिल्कुल सही!",msg:"भारी सामान (तेल, आलू) हमेशा नीचे और नाज़ुक सामान (अंडे, ब्रेड) ऊपर रखना चाहिए। इससे सामान सुरक्षित रहता है।",tip:"💡 प्रो टिप: पैकिंग का गोल्डन रूल — \"भारी नीचे, हल्का ऊपर, नाज़ुक सबसे ऊपर\""},
+    wrongFeedback:{title:"❌ यह सही तरीका नहीं है",msg:"अगर भारी सामान ऊपर आ गया तो अंडे टूट सकते हैं, ब्रेड दब सकती है। अलग-अलग बैग में पैक करने से बैग की बर्बादी होती है और कंपनी का खर्चा बढ़ता है।",tip:"✏️ याद रखें: भारी → नीचे | मीडियम → बीच में | नाज़ुक → सबसे ऊपर। इससे रिटर्न और कस्टमर शिकायत दोनों कम होती हैं।"}
+  },
+  {
+    id:2, category:"picking", tagClass:"tag-picking", tagLabel:"🔍 पिकिंग",
+    title:"गलत शेल्फ़ से उठाना: दो मिलते-जुलते प्रोडक्ट",
+    context:"ऑर्डर में 'Amul Taaza Milk 500ml' है। शेल्फ़ पर 'Amul Gold Milk 500ml' और 'Amul Taaza Milk 500ml' दोनों बगल-बगल रखे हैं।",
+    orderId:"#BLK-3391", orderItems:"Amul Taaza Milk 500ml × 2", timer:"5:15",
+    scene:"shelf",
+    sceneData:{rows:[[{emoji:"🥛",label:"Amul Gold",code:"A3-12"},{emoji:"🥛",label:"Amul Taaza",code:"A3-13",highlight:true},{emoji:"🧈",label:"Amul Butter",code:"A3-14"},{emoji:"🧀",label:"Cheese",code:"A3-15"}],[{emoji:"🥤",label:"Lassi",code:"A3-08"},{emoji:"🍶",label:"Chaach",code:"A3-09"},{emoji:"🥛",label:"Soy Milk",code:"A3-10"},{emoji:"🥛",label:"Toned Milk",code:"A3-11"}]]},
+    options:[
+      {icon:"1️⃣",title:"पैकेट का नाम और SKU कोड दोनों मिलाकर देखो",desc:"डिवाइस पर दिखे SKU से शेल्फ़ लेबल मैच करो",correct:true},
+      {icon:"2️⃣",title:"दोनों Amul हैं, कोई भी उठा लो",desc:"कस्टमर को फ़र्क नहीं पड़ेगा",correct:false},
+      {icon:"3️⃣",title:"जो पहले हाथ आए वो उठा लो, टाइम मत बर्बाद करो",desc:"स्पीड सबसे ज़रूरी है इस जॉब में",correct:false},
+      {icon:"4️⃣",title:"सुपरवाइज़र को बुलाओ और पूछो",desc:"जब तक पक्का न हो, सुपरवाइज़र से कन्फ़र्म करो",correct:false}
+    ],
+    correctFeedback:{title:"✅ एकदम सही!",msg:"मिलते-जुलते प्रोडक्ट में गलती बहुत आम है। हमेशा प्रोडक्ट नाम + SKU कोड + एक्सपायरी तीनों चेक करें।",tip:"💡 प्रो टिप: \"नाम देखो, कोड मिलाओ, तभी बैग में डालो\" — यह आदत 90% पिकिंग एरर खत्म कर देती है।"},
+    wrongFeedback:{title:"❌ रुकिए! यह गलत है",msg:"Amul Gold और Amul Taaza अलग-अलग प्रोडक्ट हैं — अलग MRP, अलग फ़ैट कंटेंट। गलत प्रोडक्ट भेजने से कस्टमर रिटर्न और रेटिंग गिरती है। सुपरवाइज़र बुलाना हर बार ज़रूरी नहीं — खुद SKU मिलाना सीखें।",tip:"✏️ याद रखें: हर प्रोडक्ट का एक यूनीक SKU कोड होता है। डिवाइस पर SKU → शेल्फ़ पर SKU — दोनों मैच होने चाहिए।"}
+  },
+  {
+    id:3, category:"quality", tagClass:"tag-quality", tagLabel:"✅ क्वालिटी चेक",
+    title:"एक्सपायर्ड प्रोडक्ट की पहचान",
+    context:"आप दही उठा रहे हैं। शेल्फ़ पर तीन बैच हैं: एक की एक्सपायरी कल है, एक 10 दिन बाद, एक 30 दिन बाद।",
+    orderId:"#BLK-5567", orderItems:"दही 400g × 1", timer:"4:30",
+    scene:"expiry",
+    sceneData:{items:[{emoji:"🥛",label:"एक्सपायरी: कल",danger:true},{emoji:"🥛",label:"एक्सपायरी: 10 दिन",warn:true},{emoji:"🥛",label:"एक्सपायरी: 30 दिन",safe:true}]},
+    options:[
+      {icon:"1️⃣",title:"सबसे जल्दी एक्सपायर होने वाला भेजो (FIFO)",desc:"कल एक्सपायर हो रहा है, पहले वो निकालो",correct:false},
+      {icon:"2️⃣",title:"10 दिन वाला भेजो — न बहुत पुराना, न बहुत नया",desc:"बैलेंस बनाकर भेजो",correct:true},
+      {icon:"3️⃣",title:"30 दिन वाला भेजो — सबसे फ्रेश",desc:"कस्टमर को सबसे फ्रेश सामान मिलना चाहिए",correct:false},
+      {icon:"4️⃣",title:"कोई भी उठा लो, दही तो दही है",desc:"सब एक जैसे हैं, फ़र्क नहीं पड़ता",correct:false}
+    ],
+    correctFeedback:{title:"✅ बहुत बढ़िया!",msg:"कल एक्सपायर होने वाला प्रोडक्ट भेजना रिस्की है — डिलीवरी तक या उसके बाद खराब हो सकता है। 30 दिन वाला रखने से इन्वेंटरी वेस्ट बढ़ेगी। 10 दिन — सही बैलेंस है।",tip:"💡 प्रो टिप: कस्टमर को कम से कम 5-7 दिन की शेल्फ़ लाइफ़ वाला प्रोडक्ट भेजें। बहुत पुराना = शिकायत, बहुत नया = इन्वेंटरी लॉस।"},
+    wrongFeedback:{title:"❌ सोचिए फिर से!",msg:"कल एक्सपायर होने वाला भेजना खतरनाक है — कस्टमर शिकायत या हेल्थ रिस्क। सबसे नया भेजने से पुराना स्टॉक बर्बाद होगा। सही तरीका: बीच की एक्सपायरी, कम से कम 5-7 दिन की शेल्फ़ लाइफ़।",tip:"✏️ FEFO (First Expiry, First Out) फॉलो करें — लेकिन कस्टमर को भेजने से पहले कम से कम 5 दिन की शेल्फ़ लाइफ़ ज़रूर हो।"}
+  },
+  {
+    id:4, category:"customer", tagClass:"tag-customer", tagLabel:"🛒 कस्टमर केस",
+    title:"प्रोडक्ट Out of Stock है",
+    context:"ऑर्डर में 'Maggi 4-pack' है लेकिन शेल्फ़ पर Maggi खत्म है। सिस्टम में स्टॉक दिखा रहा है पर शेल्फ़ खाली है।",
+    orderId:"#BLK-9210", orderItems:"Maggi 4-pack, Sauce, Bread", timer:"7:00",
+    scene:"empty_shelf",
+    sceneData:{items:[{emoji:"📦",label:"Yippee",code:"B2-01"},{emoji:"❌",label:"Maggi (खाली!)",code:"B2-02",empty:true},{emoji:"📦",label:"Top Ramen",code:"B2-03"},{emoji:"📦",label:"Ching's",code:"B2-04"}]},
+    options:[
+      {icon:"1️⃣",title:"Yippee रख दो — वो भी नूडल्स है",desc:"कस्टमर को नूडल्स चाहिए, ब्रांड मायने नहीं रखता",correct:false},
+      {icon:"2️⃣",title:"सिस्टम में 'Out of Stock' मार्क करो और सुपरवाइज़र को बताओ",desc:"प्रोसेस फॉलो करो, सिस्टम अपडेट करो",correct:true},
+      {icon:"3️⃣",title:"ऑर्डर कैंसिल कर दो — सामान नहीं है",desc:"अधूरा ऑर्डर भेजने से अच्छा कैंसिल करो",correct:false},
+      {icon:"4️⃣",title:"इग्नोर करो, बाकी सामान पैक करके भेज दो",desc:"एक आइटम कम भी चलेगा",correct:false}
+    ],
+    correctFeedback:{title:"✅ परफेक्ट!",msg:"बिना पूछे कोई और प्रोडक्ट भेजना गलत है। सिस्टम में OOS मार्क करने से इन्वेंटरी सही होती है और सुपरवाइज़र को बताने से री-स्टॉकिंग जल्दी होती है।",tip:"💡 प्रो टिप: OOS मार्क करो → सुपरवाइज़र को बताओ → सिस्टम कस्टमर को नोटिफ़ाई करेगा। कभी भी खुद से substitute मत लगाओ।"},
+    wrongFeedback:{title:"❌ यह सही नहीं है!",msg:"बिना कस्टमर की मंज़ूरी के प्रोडक्ट बदलना नहीं चाहिए। पूरा ऑर्डर कैंसिल करने की ज़रूरत नहीं — बाकी सामान तो है। बिना बताए आइटम हटाना = कस्टमर ट्रस्ट टूटना।",tip:"✏️ सही प्रोसेस: System में OOS → Supervisor inform → System handles customer communication। आपका काम: सही रिपोर्ट करना।"}
+  },
+  {
+    id:5, category:"safety", tagClass:"tag-safety", tagLabel:"⚠️ सेफ्टी",
+    title:"फ़र्श पर पानी गिरा है — क्या करें?",
+    context:"आप जल्दी-जल्दी ऑर्डर पिक कर रहे हैं। Aisle B में फ़र्श पर पानी गिरा हुआ है। आपका अगला आइटम Aisle C में है।",
+    orderId:"#BLK-4488", orderItems:"Multiple items pending", timer:"6:20",
+    scene:"safety",
+    sceneData:{},
+    options:[
+      {icon:"1️⃣",title:"ध्यान से बचकर निकल जाओ — ऑर्डर पहले",desc:"टाइम पर डिलीवरी ज़्यादा ज़रूरी है",correct:false},
+      {icon:"2️⃣",title:"रुको, 'गीला फ़र्श' साइन लगाओ और सफ़ाई टीम को बताओ",desc:"सबकी सेफ्टी पहले, फिर ऑर्डर",correct:true},
+      {icon:"3️⃣",title:"किसी और पिकर को बोल दो कि वो देख ले",desc:"मेरे पास टाइम नहीं है, कोई और संभालेगा",correct:false},
+      {icon:"4️⃣",title:"शिफ्ट खत्म होने पर रिपोर्ट कर दूँगा",desc:"अभी काम ज़्यादा है, बाद में बता देंगे",correct:false}
+    ],
+    correctFeedback:{title:"✅ बिल्कुल सही!",msg:"सेफ्टी हमेशा पहले! गीला फ़र्श = फिसलने का खतरा → चोट → काम बंद। 30 सेकंड में साइन लगाना आपकी और सबकी सुरक्षा है।",tip:"💡 प्रो टिप: \"देखा → रोका → बताया\" — यह 3-स्टेप सेफ्टी फॉर्मूला याद रखें। Safety-first culture सबकी ज़िम्मेदारी है।"},
+    wrongFeedback:{title:"❌ खतरनाक फ़ैसला!",msg:"गीले फ़र्श को इग्नोर करने से आप या कोई और फिसल सकता है — सीरियस चोट लग सकती है। दूसरे पर छोड़ना या बाद में बताना = उतनी देर तक खतरा बना रहता है।",tip:"✏️ Blinkit Safety Protocol: Hazard spotted → Mark area → Inform immediately → Resume work। एक एक्सीडेंट = पूरी शिफ्ट का नुकसान।"}
+  },
+  {
+    id:6, category:"picking", tagClass:"tag-picking", tagLabel:"🔍 पिकिंग",
+    title:"मल्टी-ऑर्डर बैचिंग: रूट प्लानिंग",
+    context:"आपके पास एक साथ 3 ऑर्डर हैं। आइटम अलग-अलग aisles में हैं। आपको सबसे efficient तरीके से पिक करना है।",
+    orderId:"#BLK-BATCH", orderItems:"3 ऑर्डर → 11 आइटम कुल", timer:"12:00",
+    scene:"route",
+    sceneData:{aisles:["A","B","C","D","E"],orders:[{id:"#1",items:["A","C","E"],color:"var(--blinkit-yellow)"},{id:"#2",items:["A","B","D"],color:"var(--blinkit-blue)"},{id:"#3",items:["B","C","D"],color:"var(--blinkit-green)"}]},
+    options:[
+      {icon:"1️⃣",title:"एक-एक ऑर्डर अलग-अलग पूरा करो",desc:"पहले #1 के सब आइटम, फिर #2, फिर #3",correct:false},
+      {icon:"2️⃣",title:"Aisle-wise चलो: A → B → C → D → E, सबके आइटम एक साथ उठाओ",desc:"एक बार में सब aisles कवर करो",correct:true},
+      {icon:"3️⃣",title:"सबसे कम आइटम वाला ऑर्डर पहले करो",desc:"जल्दी एक ऑर्डर निपटाओ",correct:false},
+      {icon:"4️⃣",title:"जो आइटम सबसे ज़्यादा ऑर्डर में है, वो पहले उठाओ",desc:"Popular items पहले, बाकी बाद में",correct:false}
+    ],
+    correctFeedback:{title:"✅ स्मार्ट मूव!",msg:"Aisle-wise sequential picking सबसे efficient तरीका है। इससे आप हर aisle में सिर्फ़ एक बार जाते हैं और तीनों ऑर्डर के आइटम एक साथ उठा लेते हैं।",tip:"💡 प्रो टिप: बैच पिकिंग में \"Snake Route\" अपनाएँ — A→B→C→D→E एक तरफ़ जाकर, बिना वापस आए। इससे चलना 40% कम होता है।"},
+    wrongFeedback:{title:"❌ इसमें टाइम वेस्ट होगा!",msg:"एक-एक ऑर्डर अलग करने से आप एक ही aisle में 3 बार जाओगे। सबसे कम आइटम वाला पहले = बाकी ऑर्डर लेट।",tip:"✏️ Batch Picking Formula: सब ऑर्डर के आइटम → Aisle-wise sort करो → एक ही route में सब उठाओ → पैकिंग स्टेशन पर अलग-अलग sort करो।"}
+  },
+  {
+    id:7, category:"quality", tagClass:"tag-quality", tagLabel:"✅ क्वालिटी चेक",
+    title:"डैमेज्ड पैकेजिंग वाला प्रोडक्ट",
+    context:"आप बिस्कुट का पैकेट उठा रहे हैं। पैकेट का ऊपरी हिस्सा थोड़ा फटा हुआ है लेकिन अंदर का बिस्कुट सही लग रहा है।",
+    orderId:"#BLK-6632", orderItems:"Parle-G 250g × 2", timer:"3:45",
+    scene:"damage",
+    sceneData:{},
+    options:[
+      {icon:"1️⃣",title:"भेज दो — अंदर का प्रोडक्ट तो सही है",desc:"बस पैकेट थोड़ा फटा है, बिस्कुट ठीक है",correct:false},
+      {icon:"2️⃣",title:"फटा पैकेट अलग रखो, शेल्फ़ से नया सही पैकेट लो",desc:"डैमेज्ड अलग, फ्रेश प्रोडक्ट कस्टमर को",correct:true},
+      {icon:"3️⃣",title:"टेप लगाकर पैक कर दो",desc:"छोटा सा डैमेज है, टेप से ठीक हो जाएगा",correct:false},
+      {icon:"4️⃣",title:"Out of Stock मार्क कर दो",desc:"डैमेज्ड = उपलब्ध नहीं",correct:false}
+    ],
+    correctFeedback:{title:"✅ एक्सपर्ट पिकर की सोच!",msg:"डैमेज्ड पैकेजिंग = कस्टमर शिकायत का 100% चांस। हमेशा सही condition वाला प्रोडक्ट भेजें। डैमेज्ड आइटम को अलग बिन में रखें।",tip:"💡 प्रो टिप: डैमेज्ड प्रोडक्ट → 'Damaged Bin' में रखो → सिस्टम में रिपोर्ट करो। इससे इन्वेंटरी सही रहती है।"},
+    wrongFeedback:{title:"❌ यह सही नहीं है!",msg:"फटा पैकेट भेजना = कस्टमर रिटर्न + बैड रेटिंग। टेप लगाना unprofessional है। OOS मार्क करने की ज़रूरत नहीं अगर शेल्फ़ पर सही पैकेट उपलब्ध हैं।",tip:"✏️ Quality Check Mantra: \"जो मैं खुद नहीं लूँगा, वो कस्टमर को नहीं भेजूँगा।\" हर आइटम उठाते समय 2-second quality check करें।"}
+  },
+  {
+    id:8, category:"packing", tagClass:"tag-packing", tagLabel:"📦 पैकिंग",
+    title:"Cold Chain Items: सही तरीके से पैक करो",
+    context:"ऑर्डर में आइसक्रीम, फ्रोज़न पीस, दूध, और चिप्स है। गर्मियों का मौसम है, तापमान 40°C बाहर।",
+    orderId:"#BLK-8845", orderItems:"Ice cream, Frozen peas, Milk 1L, Chips", timer:"6:00",
+    scene:"coldchain",
+    sceneData:{items:[{emoji:"🍦",label:"Ice Cream",temp:"frozen"},{emoji:"🟢",label:"Frozen Peas",temp:"frozen"},{emoji:"🥛",label:"दूध 1L",temp:"chilled"},{emoji:"🥔",label:"Chips",temp:"normal"}]},
+    options:[
+      {icon:"1️⃣",title:"सब एक बैग में डालो — जल्दी निकालो",desc:"एक बैग = एक ट्रिप = फास्ट डिलीवरी",correct:false},
+      {icon:"2️⃣",title:"Frozen अलग (insulated bag), Chilled अलग, Normal अलग",desc:"तापमान के हिसाब से अलग-अलग बैग",correct:true},
+      {icon:"3️⃣",title:"Frozen और Chilled एक साथ, Normal अलग",desc:"ठंडा सामान एक जगह, बाकी अलग",correct:false},
+      {icon:"4️⃣",title:"Frozen items सबसे लास्ट में पैक करो",desc:"जो सबसे जल्दी पिघले, वो सबसे बाद में",correct:false}
+    ],
+    correctFeedback:{title:"✅ Cold Chain Champion!",msg:"Frozen (-18°C), Chilled (2-8°C), और Normal temperature — तीनों को अलग रखना ज़रूरी है। Ice cream को insulated bag में रखने से पिघलने से बचता है।",tip:"💡 प्रो टिप: गर्मियों में frozen items को insulated bag + ice gel pack के साथ रखें। Chilled items (दूध, दही) को भी ठंडे बैग में। Chips जैसे dry items अलग।"},
+    wrongFeedback:{title:"❌ Cold Chain टूट जाएगी!",msg:"Frozen और Chilled एक साथ रखने से frozen items जल्दी पिघलते हैं। सब एक बैग में = ice cream soup बन जाएगी 40°C में।",tip:"✏️ Temperature Zones: 🔵 Frozen (-18°C) → Insulated + Ice pack | 🟢 Chilled (2-8°C) → Cool bag | 🟡 Normal → Regular bag। तीन ज़ोन, तीन बैग!"}
+  }
+];
+
+let currentIndex=0, score=0, answered=[], firstAttempts=[];
+
+function startSimulation(){
+  currentIndex=0;score=0;answered=[];firstAttempts=[];
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  document.getElementById('resultsScreen').classList.add('hidden');
+  document.getElementById('scenarioContainer').classList.remove('hidden');
+  updateStats();renderScenario();
+}
+
+function updateStats(){
+  document.getElementById('scoreDisplay').textContent=score;
+  document.getElementById('levelDisplay').textContent=`${currentIndex+1}/${scenarios.length}`;
+}
+
+function buildScene(s){
+  if(s.scene==='packing'){
+    return `<div class="bag-visual">${s.sceneData.items.map(i=>`<div style="text-align:center"><div style="font-size:36px;margin-bottom:6px">${i.emoji}</div><div style="font-size:11px;color:var(--text-secondary)">${i.label}</div></div>`).join('')}</div>
+    <div style="text-align:center;padding:8px 24px 16px"><div style="display:inline-flex;gap:12px">
+      <div class="bag heavy"><span>🛍️</span><div class="bag-label">भारी</div></div>
+      <div class="bag medium"><span>🛍️</span><div class="bag-label">मीडियम</div></div>
+      <div class="bag light"><span>🛍️</span><div class="bag-label">नाज़ुक</div></div>
+    </div></div>`;
+  }
+  if(s.scene==='shelf'){
+    return `<div class="dark-store-scene"><div style="font-size:10px;color:var(--text-dim);margin-bottom:12px;font-weight:700;letter-spacing:1px">🏪 AISLE A3 — DAIRY SECTION</div>${s.sceneData.rows.map(row=>`<div class="shelf-row">${row.map(item=>`<div class="shelf-item ${item.highlight?'highlight':''}"><span class="aisle-code">${item.code}</span><div style="font-size:24px">${item.emoji}</div><div class="item-label">${item.label}</div></div>`).join('')}</div>`).join('')}</div>`;
+  }
+  if(s.scene==='expiry'){
+    return `<div class="dark-store-scene"><div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;font-weight:700;letter-spacing:1px">🧊 CHILLED SECTION — YOGURT</div><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">${s.sceneData.items.map(i=>`<div style="background:${i.danger?'rgba(229,57,53,0.12)':i.warn?'rgba(255,152,0,0.12)':'rgba(45,181,64,0.12)'};border:2px solid ${i.danger?'var(--blinkit-red)':i.warn?'var(--blinkit-orange)':'var(--blinkit-green)'};border-radius:10px;padding:16px 20px;text-align:center;min-width:100px"><div style="font-size:32px;margin-bottom:8px">${i.emoji}</div><div style="font-size:11px;font-weight:700;color:${i.danger?'var(--blinkit-red)':i.warn?'var(--blinkit-orange)':'var(--blinkit-green)'}">${i.label}</div></div>`).join('')}</div></div>`;
+  }
+  if(s.scene==='empty_shelf'){
+    return `<div class="dark-store-scene"><div style="font-size:10px;color:var(--text-dim);margin-bottom:12px;font-weight:700;letter-spacing:1px">🍜 AISLE B2 — INSTANT NOODLES</div><div class="shelf-row" style="justify-content:center">${s.sceneData.items.map(i=>`<div class="shelf-item" style="${i.empty?'border-color:var(--blinkit-red);background:rgba(229,57,53,0.08)':''}">${i.code?`<span class="aisle-code">${i.code}</span>`:''}<div style="font-size:24px">${i.emoji}</div><div class="item-label">${i.label}</div></div>`).join('')}</div></div>`;
+  }
+  if(s.scene==='safety'){
+    return `<div class="dark-store-scene" style="text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;font-weight:700;letter-spacing:1px">⚠️ AISLE B — HAZARD DETECTED</div><div style="font-size:64px;margin-bottom:8px">💧</div><div style="display:inline-block;background:rgba(229,57,53,0.15);border:1px solid var(--blinkit-red);color:var(--blinkit-red);font-size:13px;font-weight:700;padding:8px 20px;border-radius:8px">⚠️ गीला फ़र्श — फिसलने का खतरा!</div><div style="display:flex;justify-content:center;gap:40px;margin-top:16px"><div style="text-align:center"><div style="font-size:24px">📦</div><div style="font-size:10px;color:var(--text-secondary)">Aisle A<br>✅ Safe</div></div><div style="text-align:center"><div style="font-size:24px">💧</div><div style="font-size:10px;color:var(--blinkit-red);font-weight:700">Aisle B<br>⚠️ Wet</div></div><div style="text-align:center"><div style="font-size:24px">📦</div><div style="font-size:10px;color:var(--text-secondary)">Aisle C<br>✅ Safe</div></div></div></div>`;
+  }
+  if(s.scene==='route'){
+    return `<div class="dark-store-scene"><div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;font-weight:700;letter-spacing:1px">🗺️ STORE MAP — BATCH PICKING</div><div style="display:flex;gap:6px;margin-bottom:16px">${s.sceneData.aisles.map(a=>`<div style="flex:1;background:#1e1e26;border-radius:6px;padding:10px 6px;text-align:center;border:1px solid #333"><div style="font-weight:900;font-size:18px;color:var(--blinkit-yellow)">${a}</div><div style="font-size:9px;color:var(--text-dim);margin-top:4px">Aisle ${a}</div></div>`).join('')}</div><div style="display:flex;gap:10px;flex-wrap:wrap">${s.sceneData.orders.map(o=>`<div style="background:#1a1a22;border:1px solid ${o.color};border-radius:6px;padding:8px 12px;flex:1;min-width:120px"><div style="font-size:11px;font-weight:800;color:${o.color}">Order ${o.id}</div><div style="font-size:10px;color:var(--text-secondary);margin-top:4px">Aisles: ${o.items.join(', ')}</div></div>`).join('')}</div></div>`;
+  }
+  if(s.scene==='damage'){
+    return `<div class="dark-store-scene" style="text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;font-weight:700;letter-spacing:1px">🍪 BISCUIT SHELF — QUALITY CHECK</div><div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap"><div style="background:rgba(229,57,53,0.08);border:2px solid var(--blinkit-red);border-radius:10px;padding:16px 24px"><div style="font-size:36px;position:relative">🍪<span style="position:absolute;top:-4px;right:-8px;font-size:16px">⚠️</span></div><div style="font-size:10px;color:var(--blinkit-red);font-weight:700;margin-top:8px">पैकेट फटा 😟</div></div><div style="background:rgba(45,181,64,0.08);border:2px solid var(--blinkit-green);border-radius:10px;padding:16px 24px"><div style="font-size:36px">🍪</div><div style="font-size:10px;color:var(--blinkit-green);font-weight:700;margin-top:8px">सही पैकेट ✓</div></div></div></div>`;
+  }
+  if(s.scene==='coldchain'){
+    return `<div class="dark-store-scene"><div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;font-weight:700;letter-spacing:1px">🌡️ TEMPERATURE ZONES — 40°C बाहर</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${s.sceneData.items.map(i=>`<div style="background:${i.temp==='frozen'?'rgba(30,136,229,0.1)':i.temp==='chilled'?'rgba(45,181,64,0.1)':'rgba(255,152,0,0.1)'};border:1.5px solid ${i.temp==='frozen'?'var(--blinkit-blue)':i.temp==='chilled'?'var(--blinkit-green)':'var(--blinkit-orange)'};border-radius:8px;padding:14px 16px;text-align:center;min-width:80px"><div style="font-size:28px;margin-bottom:4px">${i.emoji}</div><div style="font-size:10px;font-weight:600;color:var(--text-secondary)">${i.label}</div><div style="font-size:9px;font-weight:700;margin-top:4px;color:${i.temp==='frozen'?'var(--blinkit-blue)':i.temp==='chilled'?'var(--blinkit-green)':'var(--blinkit-orange)'}">${i.temp==='frozen'?'❄️ Frozen':i.temp==='chilled'?'🧊 Chilled':'🌡️ Normal'}</div></div>`).join('')}</div></div>`;
+  }
+  return '';
+}
+
+function renderScenario(){
+  const s=scenarios[currentIndex];
+  const container=document.getElementById('scenarioContainer');
+  container.innerHTML=`
+    <div class="progress-bar"><div class="progress-fill" style="width:${(currentIndex/scenarios.length)*100}%"></div></div>
+    <div class="scenario-card">
+      <div class="scenario-header">
+        <div class="scenario-tag ${s.tagClass}">${s.tagLabel}</div>
+        <h2>${s.title}</h2>
+        <div class="scenario-context">${s.context}</div>
+      </div>
+      <div class="order-strip">
+        <div class="order-id">${s.orderId}</div>
+        <div class="order-items">${s.orderItems}</div>
+        <div class="order-timer">⏱ ${s.timer}</div>
+      </div>
+      <div class="scene">${buildScene(s)}</div>
+      <div class="feedback" id="feedback"></div>
+      <div class="options" id="optionsArea">
+        ${s.options.map((o,i)=>`<button class="option-btn" onclick="selectOption(${i})" id="opt-${i}"><div class="opt-icon">${o.icon}</div><div class="opt-content"><div class="opt-title">${o.title}</div><div class="opt-desc">${o.desc}</div></div></button>`).join('')}
+      </div>
+      <button class="next-btn" id="nextBtn" onclick="nextScenario()">अगला सवाल →</button>
+    </div>`;
+  updateStats();
+}
+
+function selectOption(idx){
+  const s=scenarios[currentIndex];
+  if(answered.includes(currentIndex)) return;
+  answered.push(currentIndex);
+  const isCorrect=s.options[idx].correct;
+  const correctIdx=s.options.findIndex(o=>o.correct);
+  firstAttempts.push(isCorrect);
+  s.options.forEach((_,i)=>{
+    const btn=document.getElementById(`opt-${i}`);
+    if(i===idx) btn.classList.add(isCorrect?'selected-correct':'selected-wrong');
+    else if(i===correctIdx&&!isCorrect) btn.classList.add('show-correct');
+    else btn.classList.add('disabled');
+  });
+  const fb=document.getElementById('feedback');
+  const fbData=isCorrect?s.correctFeedback:s.wrongFeedback;
+  fb.className=`feedback ${isCorrect?'correct':'wrong'}`;
+  fb.style.display='block';
+  fb.innerHTML=`<div class="feedback-title">${fbData.title}</div><div>${fbData.msg}</div><div class="feedback-tip">${fbData.tip}</div>`;
+  if(isCorrect) score+=10;
+  updateStats();
+  document.getElementById('nextBtn').style.display='block';
+  fb.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function nextScenario(){
+  currentIndex++;
+  if(currentIndex>=scenarios.length) showResults();
+  else{renderScenario();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  document.getElementById('scenarioContainer').classList.add('hidden');
+  const total=scenarios.length, correct=firstAttempts.filter(x=>x).length;
+  const pct=Math.round((correct/total)*100);
+  const grade=pct>=80?'great':pct>=50?'okay':'poor';
+  const gradeMsg=pct>=80?'🌟 शानदार! आप एक एक्सपर्ट पिकर बनने के करीब हैं!':pct>=50?'👍 अच्छा प्रदर्शन! कुछ और अभ्यास करें।':'💪 कोशिश जारी रखें! दोबारा ट्राई करें।';
+  const categories={};
+  scenarios.forEach((s,i)=>{
+    if(!categories[s.category]) categories[s.category]={total:0,correct:0,label:s.tagLabel};
+    categories[s.category].total++;
+    if(firstAttempts[i]) categories[s.category].correct++;
+  });
+  const rScreen=document.getElementById('resultsScreen');
+  rScreen.classList.remove('hidden');
+  rScreen.innerHTML=`<div class="results">
+    <div class="results-circle ${grade}">${pct}%<small>स्कोर</small></div>
+    <h2>${gradeMsg}</h2>
+    <p>आपने ${total} में से ${correct} सवालों का सही जवाब दिया।</p>
+    <div class="results-breakdown">
+      <div class="rb-item"><div class="rb-num" style="color:var(--blinkit-green)">${correct}</div><div class="rb-label">✅ सही</div></div>
+      <div class="rb-item"><div class="rb-num" style="color:var(--blinkit-red)">${total-correct}</div><div class="rb-label">❌ गलत</div></div>
+      <div class="rb-item"><div class="rb-num" style="color:var(--blinkit-yellow)">${score}</div><div class="rb-label">⚡ कुल स्कोर</div></div>
+    </div>
+    <div style="max-width:400px;margin:20px auto;text-align:left">
+      ${Object.entries(categories).map(([cat,d])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;background:var(--bg-card);padding:10px 14px;border-radius:8px;border:1px solid #2a2a2e"><div style="font-size:13px;flex:1">${d.label}</div><div style="font-size:14px;font-weight:800;color:${d.correct===d.total?'var(--blinkit-green)':'var(--blinkit-orange)'}">${d.correct}/${d.total}</div></div>`).join('')}
+    </div>
+    <button class="retry-btn" onclick="startSimulation()">🔄 दोबारा ट्राई करें</button>
+  </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
